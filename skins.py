@@ -7,17 +7,25 @@ skins = {'malphite': ['Shamrock', 'Coral Reef', 'Marble', 'Obsidian',
                      'Hyena'],
          'singed': ['Hextech', 'Surfer', 'Mad Scientist', 'Augmented']
          }
-    
-if len(sys.argv) < 2:
-    # TODO: random skin amongst all champs
-    pass
-else:
-    champ_name = sys.argv[1]
-    choices = skins[champ_name.lower()]
+
+def get_skin_list(champ_name):
+    # Returns list of all available skins, including Normal
     # TODO: Is there a cleaner way to do this? IE less than 3 lines?
+    choices = skins[champ_name.lower()]
     choices.append('Normal')
+    return choices
+
+def pick_skin(champ_name):
+    choices = get_skin_list(champ_name)
     skin = random.choice(choices)
-    print(skin)
+    return skin
 
 if __name__== "__main__":
-    pass
+    if len(sys.argv) < 2:
+        champ = random.choice(skins.keys())
+        skin = pick_skin(champ)
+        print("{0} {1}".format(skin, champ.capitalize()))
+    else:
+        champ_name = sys.argv[1]
+        skin = pick_skin(champ_name)
+        print(skin)
