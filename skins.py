@@ -22,7 +22,7 @@ def pick_skin(champ_name):
 
 if __name__== "__main__":
     if len(sys.argv) < 2:
-        champ = random.choice(skins.keys())
+        champ = random.choice(list(skins.keys()))
         skin = pick_skin(champ)
         print("{0} {1}".format(skin, champ.capitalize()))
     else:
