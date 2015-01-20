@@ -36,6 +36,7 @@ def get_last_match():
             latest_time = match['matchCreation']
             latest_match = match
     match_id = latest_match['matchId']
+    # TODO: Get timeline data (as optional arg?)
     match_url = "https://na.api.pvp.net/api/lol/" \
                 "{0}/v2.2/match/{1}".format(ltwheat_region,
                                             match_id)
@@ -64,6 +65,16 @@ def get_matches(ranked_queues='',begin_index=-1,end_index=-1,champion_id=-1):
 	## 4a) begin serves as anchor--so a request for matches 0 (b) through 30 (e)
 	##     returns the same info as 0 through 17.
     return make_generic_request(match_history_url)
+
+def store_last_match():
+    match = get_last_match()
+    try:
+        client = pymongo.MongoClient()
+        #DB_NAME = client.DB_NAME
+        #matches = DB_NAME.matches
+        # TODO: catch DuplicateKeyError
+        #db_match_id = matches.insert(match)
+    except ConnectionFailure("Could not connect to database")
     
 if __name__ == '__main__':
     # TODO: This should return a short synopsis of last game, ie "Win as Jinx", maybe date/duration, etc
