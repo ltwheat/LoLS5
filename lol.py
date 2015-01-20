@@ -20,7 +20,10 @@ def make_generic_request(url, api_key=None):
 
     # Make request
     url += "?api_key={0}".format(api_key)
-    response = request.urlopen(url)
+    try:
+        response = request.urlopen(url)
+    except HTTPError as e:
+        print("Error: Status code {0}; {1}".format(e.code, e.reason))
     data = response.read()
     return json.loads(data.decode())
 
@@ -32,7 +35,11 @@ def get_last_match():
         if match['matchCreation'] > latest_time:
             latest_time = match['matchCreation']
             latest_match = match
-    return match
+    match_id = latest_match['matchId']
+    match_url = "https://na.api.pvp.net/api/lol/" \
+                "{0}/v2.2/match/{1}".format(ltwheat_region,
+                                            match_id)
+    return make_generic_request(match_url)
 
 def get_champ_by_id(champ_id):
     champion_url = "https://na.api.pvp.net/api/lol/static-data/" \
