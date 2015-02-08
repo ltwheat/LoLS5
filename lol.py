@@ -47,6 +47,14 @@ def get_champ_by_id(champ_id):
                    "{0}/v1.2/champion/{1}".format(ltwheat_region, champ_id)
     resp = make_generic_request(champion_url)
     return resp["name"]
+
+def get_match_champs(match):
+    participants = match['participants']
+    champs = []
+    for participant in participants:
+        champ = get_champ_by_id(participant['championId'])
+        champs.append(champ)
+    return champs
     
 def get_matches(ranked_queues='',begin_index=-1,end_index=-1,champion_id=-1):
     # TODO:
@@ -74,7 +82,8 @@ def store_last_match():
         #matches = DB_NAME.matches
         # TODO: catch DuplicateKeyError
         #db_match_id = matches.insert(match)
-    except ConnectionFailure("Could not connect to database")
+    except pymongo.errors.ConnectionFailure:
+        print("Could not connect to database")
     
 if __name__ == '__main__':
     # TODO: This should return a short synopsis of last game, ie "Win as Jinx", maybe date/duration, etc
