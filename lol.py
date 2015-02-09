@@ -4,6 +4,8 @@ import datetime
 import math
 import json
 import pymongo
+#TODO: why does db.collection.update replace everything
+#      instead of actually updating???
 from urllib import request
 
 ltwheat_summ_id = 28767867
@@ -12,6 +14,9 @@ ltwheat_api_key = "b9de0d75-2404-48c1-b085-6ef961492a38"
 
 mongo_host = "localhost"
 mongo_port = 27017
+
+raw_lol_db_name = "lol_s5"
+raw_solo_q_coll_name = "solo_ranked_5x5"
 
 ##### TODO #####
 # 1) Long-term goal: I need to store all this info as Python objects, rather
@@ -120,20 +125,45 @@ def get_matches(ranked_queues='',begin_index=-1,end_index=-1,champion_id=-1):
 	##     returns the same info as 0 through 17.
     return make_generic_request(match_history_url)
 
-def store_last_match():
-    match = get_last_match()
+### Mongodb notes ###
+#   1) Connection/Client -> Database -> Collection
+#      b) client=pymongo.MongoClient()
+#         db=pymongo.database.Database(client, "db_name")
+#         db.coll_name.insert({"sample":"dict"})
+#      b) client=pymongo.MongoClient()
+#         db=client['db_name']
+#         coll=db['coll_name']
+#         coll.insert({"sample":"dict"})
+#   2) Collection won't actually exist until data is inserted
+#   3) Commonly used gets:
+#      a) coll/conn.database_names()# returns all db names
+#      b) db.collection_names()# returns all collection names in db
+#      c) coll.find_one()# returns (random?) single item from coll
+#      d) list(coll.find())# returns everything in coll. Must be cast
+def store_raw_match(match):
     try:
         client = pymongo.MongoClient()
-        #DB_NAME = client.DB_NAME
-        #matches = DB_NAME.matches
-        # TODO: catch DuplicateKeyError
-        #db_match_id = matches.insert(match)
+        # Automatically connects or creates if nonexistent
+        db = client[raw_lol_db_name]
+        coll = db[raw_solo_q_coll_name]
+        # TODO: This check loops through every match in the db but I feel like
+        #       that probably won't scale? Should we keep a separate coll of
+        #       just match ids?
+        match_id = match['matchId']
+        for db_match in list(coll.find()):
+            if match_id == db_match['matchId']:
+                err_msg = "Match with id {0} already found in " \
+                           "collection".format(match_id)
+                raise pymongo.errors.DuplicateKeyError(err_msg)
+        db_match_id = coll.insert(match)
+        print("Stored match of id {0}:".format(match['matchId']))
+        print(match_synopsis(match))
     except pymongo.errors.ConnectionFailure:
         print("Could not connect to database")
+    except pymongo.errors.DuplicateKeyError as dke:
+        print(dke)
     
 if __name__ == '__main__':
-    # TODO: This should return a short synopsis of last game, ie "Win as Jinx",
-    #       maybe date/duration, etc
     match = get_last_match()
 
     synopsis = match_synopsis(match)
