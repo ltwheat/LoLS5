@@ -1,16 +1,19 @@
 #C:\Python33\python
 
 import datetime
-import math
 import json
+import math
 import pymongo
+import time
 #TODO: why does db.collection.update replace everything
 #      instead of actually updating???
 from urllib import request
+from urllib.error import HTTPError
 
 ltwheat_summ_id = 28767867
 ltwheat_region = 'na'
 ltwheat_api_key = "b9de0d75-2404-48c1-b085-6ef961492a38"
+ltwheat_api_rate_limit = 1
 
 mongo_host = "localhost"
 mongo_port = 27017
@@ -19,6 +22,7 @@ raw_lol_db_name = "lol_s5"
 raw_solo_q_coll_name = "solo_ranked_5x5"
 
 ##### TODO #####
+#THIS THING IS A MESS. But I'm itching to play LoL, so I'll deal later.
 # 1) Long-term goal: I need to store all this info as Python objects, rather
 #    than raw data. So a lot of this stuff is gonna have to change, and we'll
 #    also need some actual classes and a api-to-class constructor, but for now,
@@ -30,11 +34,14 @@ def make_generic_request(url, api_key=None):
         api_key = ltwheat_api_key
 
     # Make request
+    # TODO: This needs to be rethought if we're gonna be passing in args
     url += "?api_key={0}".format(api_key)
     try:
+        print("Hitting {0}".format(url))
         response = request.urlopen(url)
     except HTTPError as e:
         print("Error: Status code {0}; {1}".format(e.code, e.reason))
+        return
     data = response.read()
     return json.loads(data.decode())
 
@@ -42,22 +49,23 @@ def get_last_match():
     all_matches = get_matches()
     latest_match = None
     latest_time = 0
-    for match in all_matches['matches']:
+    for match in all_matches:
         if match['matchCreation'] > latest_time:
             latest_time = match['matchCreation']
             latest_match = match
-    match_id = latest_match['matchId']
-    # TODO: Get timeline data (as optional arg?)
-    match_url = "https://na.api.pvp.net/api/lol/" \
-                "{0}/v2.2/match/{1}".format(ltwheat_region,
-                                            match_id)
-    return make_generic_request(match_url)
+    return latest_match
 
 def get_champ_by_id(champ_id):
     champion_url = "https://na.api.pvp.net/api/lol/static-data/" \
                    "{0}/v1.2/champion/{1}".format(ltwheat_region, champ_id)
     resp = make_generic_request(champion_url)
     return resp["name"]
+
+def get_match_by_id(match_id):
+    match_url = "https://na.api.pvp.net/api/lol/" \
+                "{0}/v2.2/match/{1}".format(ltwheat_region,
+                                            match_id)
+    return make_generic_request(match_url)
 
 def get_match_champs(match):
     participants = match['participants']
@@ -123,7 +131,14 @@ def get_matches(ranked_queues='',begin_index=-1,end_index=-1,champion_id=-1):
     ## 4) 16 > end - begin (soft limit)
 	## 4a) begin serves as anchor--so a request for matches 0 (b) through 30 (e)
 	##     returns the same info as 0 through 17.
-    return make_generic_request(match_history_url)
+    ## 5) Figure out if there's an option to get data from previous seasons
+    match_history = make_generic_request(match_history_url)
+    matches = []
+    history_matches = match_history['matches']
+    for h_match in history_matches:
+        matches.append(get_match_by_id(h_match['matchId']))
+        time.sleep(ltwheat_api_rate_limit)
+    return matches
 
 ### Mongodb notes ###
 #   1) Connection/Client -> Database -> Collection
