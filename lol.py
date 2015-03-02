@@ -3,12 +3,17 @@
 import datetime
 import json
 import math
-import pymongo
 import time
 #TODO: why does db.collection.update replace everything
 #      instead of actually updating???
 from urllib import request
 from urllib.error import HTTPError
+
+# Allow for non-mongo functionality w/o module installed
+try:
+    import pymongo
+except ImportError:
+    print("Could not import pymongo--errors may occur")
 
 ltwheat_summ_id = 28767867
 ltwheat_region = 'na'
@@ -173,6 +178,7 @@ def store_raw_match(match):
         db_match_id = coll.insert(match)
         print("Stored match of id {0}:".format(match['matchId']))
         print(match_synopsis(match))
+        return db_match_id
     except pymongo.errors.ConnectionFailure:
         print("Could not connect to database")
     except pymongo.errors.DuplicateKeyError as dke:
