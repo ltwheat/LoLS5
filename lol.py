@@ -60,6 +60,7 @@ def get_last_match():
             latest_match = match
     return latest_match
 
+	# TODO: Make these URLs global
 def get_champ_by_id(champ_id):
     champion_url = "https://na.api.pvp.net/api/lol/static-data/" \
                    "{0}/v1.2/champion/{1}".format(ltwheat_region, champ_id)
@@ -129,7 +130,10 @@ def get_matches(ranked_queues='',begin_index=-1,end_index=-1,champion_id=-1):
     match_history_url = "https://na.api.pvp.net/api/lol/"\
                         "{0}/v2.2/matchhistory/{1}".format(ltwheat_region,
                                                            ltwheat_summ_id)
-    # TODO: Rules for begin and end index:
+    # TODO: Rules for begin and end index (which represent how far back to go,
+    #       so begin_index=1 says to go back starting 1 match ago, all the way
+    #       back to 15 matches ago. end_index=24 says go back 9(=24-15) matches
+    #       ago all the way back to 24 matches ago.
     ## 1) integers
     ## 2) begin > -1; end > 0
     ## 3) end > begin
